@@ -15,6 +15,7 @@ require('dotenv').config(); // MUST be first — loads .env variables
 
 const express = require('express');
 const cors    = require('cors');
+const path    = require('path');
 const routes  = require('./routes/expenseRoutes');
 
 // Create the Express application
@@ -47,9 +48,20 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api', routes);
 
 // ─────────────────────────────────────────────
-// ROOT ROUTE — Health Check
+// SERVE FRONTEND (Static Files)
+// In production (Railway), serve the frontend folder
+// so both frontend and backend run from one URL
 // ─────────────────────────────────────────────
+app.use(express.static(path.join(__dirname, '..', 'frontend')));
+
+// Serve index.html for the root route
 app.get('/', (req, res) => {
+  const indexPath = path.join(__dirname, '..', 'frontend', 'index.html');
+  const fs = require('fs');
+  if (fs.existsSync(indexPath)) {
+    return res.sendFile(indexPath);
+  }
+  // Fallback API info if no frontend folder
   res.json({
     message: '✅ Expense Tracker API is running!',
     version: '1.0.0',

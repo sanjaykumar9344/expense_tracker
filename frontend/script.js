@@ -20,9 +20,11 @@
 // ─────────────────────────────────────────────
 // CONFIGURATION
 // ─────────────────────────────────────────────
-// The base URL of the backend API.
-// Change this if your backend runs on a different port.
-const API_BASE = 'http://localhost:3000/api';
+// Auto-detect: if running on Railway (or any hosted server),
+// use the same origin. If running locally, use localhost:3000.
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:3000/api'
+  : `${window.location.origin}/api`;
 
 // ─────────────────────────────────────────────
 // STATE
