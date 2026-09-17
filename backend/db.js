@@ -1,44 +1,81 @@
 // ============================================================
-// db.js — Database Connection
+// db.js — Database Connection (SQLite - No Password Required!)
 // ============================================================
-// This file creates a MySQL connection POOL.
-// A pool keeps multiple connections ready so the server can
-// handle many requests at the same time efficiently.
+// We switched from MySQL to SQLite so you can run the app
+// with ZERO configuration — no password, no server needed.
 //
-// We use mysql2 (not mysql) because it:
-// - Supports Promises (async/await)
-// - Is faster and more modern
+// SQLite stores everything in a single file: expenses.db
+// It works exactly like MySQL for CRUD operations.
+//
+// The SQL syntax (INSERT, SELECT, UPDATE, DELETE) is identical!
 // ============================================================
 
-const mysql = require('mysql2');
-require('dotenv').config(); // Load variables from .env file
+const Database = require('better-sqlite3');
+const path     = require('path');
 
-// Create a connection pool using environment variables
-const pool = mysql.createPool({
-  host:     process.env.DB_HOST,     // e.g. 'localhost'
-  port:     process.env.DB_PORT,     // e.g. 3306
-  user:     process.env.DB_USER,     // e.g. 'root'
-  password: process.env.DB_PASSWORD, // Your MySQL password
-  database: process.env.DB_NAME,     // 'expense_tracker'
-  waitForConnections: true,          // Wait if all connections are busy
-  connectionLimit: 10,               // Max 10 simultaneous connections
-  queueLimit: 0                      // Unlimited queue
-});
+// The database file will be created automatically in the backend folder
+const dbPath = path.join(__dirname, 'expenses.db');
 
-// .promise() converts the pool to use async/await (Promises)
-// instead of old-style callbacks
-const promisePool = pool.promise();
+// Open (or create) the SQLite database file
+const db = new Database(dbPath);
 
-// Test the connection when the server starts
-pool.getConnection((err, connection) => {
-  if (err) {
-    console.error('❌ Database connection failed:', err.message);
-    console.error('   Check your .env credentials and make sure MySQL is running.');
-    return;
+// Enable WAL mode for better performance
+db.pragma('journal_mode = WAL');
+
+// ─────────────────────────────────────────────
+// CREATE THE TABLE if it doesn't exist yet
+// This runs once when the server starts
+// ─────────────────────────────────────────────
+db.exec(`
+  CREATE TABLE IF NOT EXISTS expenses (
+    id             INTEGER       PRIMARY KEY AUTOINCREMENT,
+    title          TEXT          NOT NULL,
+    amount         REAL          NOT NULL,
+    category       TEXT          NOT NULL,
+    description    TEXT,
+    expense_date   TEXT          NOT NULL,
+    payment_method TEXT          NOT NULL,
+    created_at     TEXT          DEFAULT (datetime('now','localtime'))
+  )
+`);
+
+console.log('✅ SQLite database ready — file: expenses.db (no password needed!)');
+
+// ============================================================
+// ADAPTER: Make SQLite work with the same interface as mysql2
+// ============================================================
+// mysql2 uses: db.query(sql, params) → returns [rows]
+// SQLite uses: db.prepare(sql).all(params) or .run(params)
+//
+// This adapter wraps SQLite in a promise-based interface
+// so we don't need to change any controller code!
+// ============================================================
+const adapter = {
+  query: (sql, params = []) => {
+    return new Promise((resolve, reject) => {
+      try {
+        const upperSQL = sql.trim().toUpperCase();
+
+        if (upperSQL.startsWith('SELECT') || upperSQL.startsWith('DESCRIBE')) {
+          // SELECT → use .all() to get all rows
+          const stmt = db.prepare(sql);
+          const rows = params.length > 0 ? stmt.all(params) : stmt.all();
+          resolve([rows]); // Return [rows] like mysql2 does
+        } else {
+          // INSERT / UPDATE / DELETE → use .run()
+          const stmt = db.prepare(sql);
+          const result = params.length > 0 ? stmt.run(params) : stmt.run();
+          // Mimic mysql2's result object
+          resolve([{
+            insertId:    result.lastInsertRowid,
+            affectedRows: result.changes
+          }]);
+        }
+      } catch (err) {
+        reject(err);
+      }
+    });
   }
-  console.log('✅ Connected to MySQL database:', process.env.DB_NAME);
-  connection.release(); // Release the connection back to the pool
-});
+};
 
-// Export the promise-based pool so controllers can use it
-module.exports = promisePool;
+module.exports = adapter;

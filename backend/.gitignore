@@ -8,6 +8,11 @@ node_modules/
 # Environment variables (NEVER upload — contains your DB password!)
 .env
 
+# SQLite database files (local data — not for GitHub)
+*.db
+*.db-shm
+*.db-wal
+
 # Logs
 *.log
 npm-debug.log*
