@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Expense Tracker — CRUD Application</title>
+  <meta name="description" content="A beginner-friendly Expense Tracker application demonstrating full CRUD operations with Node.js, Express, and MySQL." />
+
+  <!-- Google Fonts: Inter for clean, modern typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Our custom stylesheet -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+  <!-- ======================================================
+       HEADER
+  ====================================================== -->
+  <header class="header">
+    <div class="header-content">
+      <div class="logo">
+        <span class="logo-icon">💸</span>
+        <div>
+          <h1 class="logo-title">Expense Tracker</h1>
+          <p class="logo-sub">CRUD Learning Application</p>
+        </div>
+      </div>
+      <div class="header-badge">MySQL + Node.js + Express</div>
+    </div>
+  </header>
+
+  <!-- ======================================================
+       TOAST NOTIFICATION (hidden by default)
+  ====================================================== -->
+  <div id="toast" class="toast" role="alert" aria-live="polite">
+    <span id="toast-icon">✅</span>
+    <span id="toast-message">Success!</span>
+  </div>
+
+  <!-- ======================================================
+       MAIN CONTENT
+  ====================================================== -->
+  <main class="main">
+
+    <!-- ──────────────────────────────────────
+         DASHBOARD STATS CARDS
+    ────────────────────────────────────── -->
+    <section class="dashboard" aria-label="Dashboard Statistics">
+      <div class="stat-card" id="card-total">
+        <div class="stat-icon">💰</div>
+        <div class="stat-info">
+          <p class="stat-label">Total Expenses</p>
+          <p class="stat-value" id="stat-total">₹0.00</p>
+        </div>
+      </div>
+      <div class="stat-card" id="card-count">
+        <div class="stat-icon">📋</div>
+        <div class="stat-info">
+          <p class="stat-label">Transactions</p>
+          <p class="stat-value" id="stat-count">0</p>
+        </div>
+      </div>
+      <div class="stat-card" id="card-highest">
+        <div class="stat-icon">🔝</div>
+        <div class="stat-info">
+          <p class="stat-label">Highest Expense</p>
+          <p class="stat-value" id="stat-highest">₹0.00</p>
+        </div>
+      </div>
+      <div class="stat-card" id="card-average">
+        <div class="stat-icon">📊</div>
+        <div class="stat-info">
+          <p class="stat-label">Average Expense</p>
+          <p class="stat-value" id="stat-average">₹0.00</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ──────────────────────────────────────
+         ADD / EDIT EXPENSE FORM
+    ────────────────────────────────────── -->
+    <section class="form-section">
+      <div class="form-header">
+        <h2 id="form-title">➕ Add New Expense</h2>
+        <button id="btn-cancel-edit" class="btn btn-secondary hidden" onclick="cancelEdit()">✕ Cancel Edit</button>
+      </div>
+
+      <!-- Hidden input to track which expense is being edited -->
+      <input type="hidden" id="edit-id" value="" />
+
+      <form id="expense-form" class="expense-form" novalidate>
+
+        <!-- Row 1: Title + Amount -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="title">Expense Title <span class="required">*</span></label>
+            <input
+              type="text"
+              id="title"
+              name="title"
+              placeholder="e.g. Lunch at Café"
+              maxlength="100"
+              required
+            />
+            <span class="field-error" id="err-title"></span>
+          </div>
+
+          <div class="form-group">
+            <label for="amount">Amount (₹) <span class="required">*</span></label>
+            <input
+              type="number"
+              id="amount"
+              name="amount"
+              placeholder="e.g. 250.00"
+              min="0.01"
+              step="0.01"
+              required
+            />
+            <span class="field-error" id="err-amount"></span>
+          </div>
+        </div>
+
+        <!-- Row 2: Category + Payment Method -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="category">Category <span class="required">*</span></label>
+            <select id="category" name="category" required>
+              <option value="">— Select Category —</option>
+              <option value="Food">🍔 Food</option>
+              <option value="Travel">✈️ Travel</option>
+              <option value="Shopping">🛍️ Shopping</option>
+              <option value="Education">📚 Education</option>
+              <option value="Entertainment">🎬 Entertainment</option>
+              <option value="Bills">🧾 Bills</option>
+              <option value="Other">📦 Other</option>
+            </select>
+            <span class="field-error" id="err-category"></span>
+          </div>
+
+          <div class="form-group">
+            <label for="payment_method">Payment Method <span class="required">*</span></label>
+            <select id="payment_method" name="payment_method" required>
+              <option value="">— Select Payment —</option>
+              <option value="Cash">💵 Cash</option>
+              <option value="UPI">📱 UPI</option>
+              <option value="Debit Card">💳 Debit Card</option>
+              <option value="Credit Card">💳 Credit Card</option>
+              <option value="Bank Transfer">🏦 Bank Transfer</option>
+            </select>
+            <span class="field-error" id="err-payment"></span>
+          </div>
+        </div>
+
+        <!-- Row 3: Date + Description -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="expense_date">Date <span class="required">*</span></label>
+            <input
+              type="date"
+              id="expense_date"
+              name="expense_date"
+              required
+            />
+            <span class="field-error" id="err-date"></span>
+          </div>
+
+          <div class="form-group">
+            <label for="description">Description <span class="optional">(optional)</span></label>
+            <input
+              type="text"
+              id="description"
+              name="description"
+              placeholder="Additional notes..."
+              maxlength="255"
+            />
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" id="btn-submit" class="btn btn-primary btn-full">
+          <span id="btn-submit-text">➕ Add Expense</span>
+        </button>
+
+      </form>
+    </section>
+
+    <!-- ──────────────────────────────────────
+         SEARCH & FILTER BAR
+    ────────────────────────────────────── -->
+    <section class="filter-section">
+      <div class="filter-bar">
+
+        <div class="filter-group">
+          <label for="search-input">🔍 Search</label>
+          <input
+            type="text"
+            id="search-input"
+            placeholder="Search by title..."
+          />
+        </div>
+
+        <div class="filter-group">
+          <label for="filter-category">Category</label>
+          <select id="filter-category">
+            <option value="">All Categories</option>
+            <option value="Food">🍔 Food</option>
+            <option value="Travel">✈️ Travel</option>
+            <option value="Shopping">🛍️ Shopping</option>
+            <option value="Education">📚 Education</option>
+            <option value="Entertainment">🎬 Entertainment</option>
+            <option value="Bills">🧾 Bills</option>
+            <option value="Other">📦 Other</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="filter-payment">Payment Method</label>
+          <select id="filter-payment">
+            <option value="">All Methods</option>
+            <option value="Cash">💵 Cash</option>
+            <option value="UPI">📱 UPI</option>
+            <option value="Debit Card">💳 Debit Card</option>
+            <option value="Credit Card">💳 Credit Card</option>
+            <option value="Bank Transfer">🏦 Bank Transfer</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="sort-by">Sort By</label>
+          <select id="sort-by">
+            <option value="created_at">Date Added</option>
+            <option value="expense_date">Expense Date</option>
+            <option value="amount">Amount</option>
+            <option value="title">Title</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="sort-order">Order</label>
+          <select id="sort-order">
+            <option value="DESC">↓ Newest First</option>
+            <option value="ASC">↑ Oldest First</option>
+          </select>
+        </div>
+
+        <button class="btn btn-secondary" onclick="resetFilters()">🔄 Reset</button>
+      </div>
+    </section>
+
+    <!-- ──────────────────────────────────────
+         EXPENSE TABLE
+    ────────────────────────────────────── -->
+    <section class="table-section">
+      <div class="table-header">
+        <h2>📋 All Expenses</h2>
+        <span class="record-count" id="record-count">Loading...</span>
+      </div>
+
+      <!-- Loading Spinner -->
+      <div id="loading-spinner" class="loading-spinner">
+        <div class="spinner"></div>
+        <p>Loading expenses...</p>
+      </div>
+
+      <!-- No Data Message -->
+      <div id="no-data" class="no-data hidden">
+        <p>🗂️ No expenses found.</p>
+        <p class="no-data-sub">Add your first expense using the form above!</p>
+      </div>
+
+      <!-- The Expense Table -->
+      <div class="table-wrapper" id="table-wrapper">
+        <table class="expense-table" id="expense-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Title</th>
+              <th>Amount</th>
+              <th>Category</th>
+              <th>Date</th>
+              <th>Payment</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="expense-tbody">
+            <!-- Rows are inserted here dynamically by JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ======================================================
+       FOOTER
+  ====================================================== -->
+  <footer class="footer">
+    <p>Built to learn CRUD — <strong>C</strong>reate · <strong>R</strong>ead · <strong>U</strong>pdate · <strong>D</strong>elete</p>
+    <p class="footer-stack">Node.js + Express + MySQL + Vanilla JS</p>
+  </footer>
+
+  <!-- Our JavaScript file -->
+  <script src="script.js"></script>
+
+</body>
+</html>

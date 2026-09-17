@@ -1,0 +1,21 @@
+# ============================================================
+# .gitignore — Files NOT to upload to GitHub
+# ============================================================
+
+# Node modules (very large, can be reinstalled with npm install)
+node_modules/
+
+# Environment variables (NEVER upload — contains your DB password!)
+.env
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/

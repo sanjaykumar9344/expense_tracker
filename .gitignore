@@ -1,0 +1,19 @@
+# ============================================================
+# Root .gitignore for Expense Tracker Project
+# ============================================================
+
+# Backend secrets — NEVER push to GitHub
+backend/.env
+backend/node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
